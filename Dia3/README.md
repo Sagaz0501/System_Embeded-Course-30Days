@@ -50,7 +50,7 @@ En PC (simulación):
 gpio_mode(pin, mode);      // Configura el modo (INPUT, OUTPUT, etc.)
 gpio_write(pin, value);    // Escribe 0 o 1 en un pin (si es salida)
 int val = gpio_read(pin);  // Lee 0 o 1 de un pin (si es entrada)
-
+```
 ---
 ##7 Ejemplos
 ```c
@@ -61,7 +61,7 @@ if(GPIO_READ(READ_SESNOR)){
 
 //Escritura(Salida)
 GPIO_WRITE(PIN_MOTOR, 1); //Enciende el motor
-
+```
 ---
 ##8 Buenas practicas
 - Siempre configurar el modo antes de usar el pin
@@ -85,7 +85,7 @@ GPIO_WRITE(PIN_MOTOR, 1); //Enciende el motor
 usleep(1000);  //milisegundos
 sleep(1);      //segundos
 nanosleep(...) //nanosegundos
-
+```
 - o en micros:
 1. delay(ms) -> Arduino
 2. HAL_Delay(ms) -> STM32
@@ -102,7 +102,7 @@ e.j.
 led_on();
 sleep(5); //5 segundos
 led_off();
-
+```
 - Minetras el CPU esta en Sleep(5), no lee botones, y no procesa comunicaciones, no hace nada mas
 - por eso en FW profesionales se usan *Temporizadores no bloquiantes*
 
@@ -122,6 +122,7 @@ while(1){
         t0 = now_ms(); //se reinicia el conteo
     }
 }
+```
 ## ⏱ Cómo funciona `now_ms()` y la temporización
 
 - `now_ms()` devuelve el tiempo actual en **milisegundos** desde que arrancó el sistema/programa.  
@@ -133,6 +134,7 @@ if (now_ms() - t0 >= intervalo) {
     // Acción a ejecutar
     t0 = now_ms(); // Reinicia el conteo
 }
+```
 La resta indica cuántos ms han pasado desde t0.
 
 Si supera el intervalo, haces la acción y reinicias t0 con now_ms() para volver a contar.
@@ -155,7 +157,8 @@ while (1) {
         t_sensor = now_ms();
     }
 }
-
+```
 ---
 #Sumulacion
-
+/*se hara una simulacion*/ de un led modular 
+[Simulacion_led_modular](github.com/Sagaz0501/System_Embeded_Course-30Days/tree/main/Dia3/Simulacion_led_modular)

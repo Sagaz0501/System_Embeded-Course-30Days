@@ -1,199 +1,187 @@
-# 🖥️ Simulación de GPIO + Debounce + TTY (Modo RAW)
+# 📟 Simulación de GPIO + Debounce + TTY (Modo RAW)
 
-Proyecto didáctico para simular un **microcontrolador en PC** y practicar:
+Proyecto educativo del **Día 3** para simular un microcontrolador en PC y practicar:
+- Control de **GPIO** (entradas/salidas digitales)
+- Filtrado de rebotes (**debounce**)
+- Lectura de teclado en **modo raw** y **no bloqueante**
 
-- **GPIO**
-- **Debounce**
-- **Lectura de teclado en modo raw / no bloqueante**
-
-Se separa la **lógica de aplicación** de la **capa de hardware**, permitiendo portar el código a un MCU real sin modificar la capa de alto nivel.
-
----
-
-## 📂 Estructura del proyecto
-
-```
-Dia3/Simulacion_led_modular/
-├─ include/
-│  ├─ gpio.h
-│  ├─ tty.h
-│  ├─ pins.h
-│  ├─ debounce.h
-│  └─ timeutil.h
-├─ src/
-│  ├─ main_switch.c
-│  ├─ main_toggle.c
-│  ├─ gpio_sim.c
-│  ├─ tty.c
-│  ├─ debounce.c
-│  └─ timeutil.c
-├─ makefile
-├─ build/
-└─ bin/
-```
+Diseñado para ejecutarse en **Linux/macOS/WSL** y portable a microcontroladores reales sin modificar la lógica de aplicación.
 
 ---
 
-## 🔌 Módulos
+## 🧠 Idea General
 
-### 1. **GPIO (Simulado)**  
-**Archivos:** `include/gpio.h` + `src/gpio_sim.c`
+Separar el código en **capas independientes** para permitir portabilidad entre simulación y hardware real:
 
-```c
-void gpio_init(void);
-void gpio_mode(int pin, gpio_mode_t mode);
-void gpio_set_pull(int pin, gpio_pull_t pull);
-void gpio_write(int pin, int value);
-int  gpio_read(int pin);
-void gpio_simulate_input(int pin, int value); // solo simulación
-```
-
-**Detalles:**
-- Modela cada pin con `mode`, `pull`, `value`, `input_raw`.
-- `gpio_read` devuelve el valor según modo y resistencia pull.
-- Alias: `gpio_sim_set_input` → `gpio_simulate_input`.
-
-**Fixes:**
-- `intpin_is_valid` → `int pin_is_valid`
-- Implementación de `gpio_read`.
-- Corrección de alias `gpio_sim_set_input`.
+| Capa            | Función                                                     | Archivos                                          |
+|-----------------|-------------------------------------------------------------|---------------------------------------------------|
+| **Aplicación**  | Control de LED y botón con debounce.                        | `src/main_switch.c`, `src/main_toggle.c`          |
+| **GPIO**        | Inicializar pines, leer/escribir, configurar resistencias.  | `include/gpio.h`, `src/gpio_sim.c`                |
+| **Tiempo**      | Funciones de tiempo y retardo.                              | `include/timeutil.h`, `src/timeutil.c`            |
+| **Debounce**    | Filtrar rebotes mecánicos de botones.                       | `include/debounce.h`, `src/debounce.c`            |
+| **TTY**         | Lectura de teclado sin bloqueo y sin eco.                   | `include/tty.h`, `src/tty.c`                      |
+| **Def. Pines**  | IDs lógicos de pines LED y botón.                           | `include/pins.h`                                  |
 
 ---
 
-### 2. **TTY Raw + No Bloqueante**  
-**Archivos:** `include/tty.h` + `src/tty.c`
+## 📂 Estructura del Proyecto
 
-```c
-void tty_raw_enable(void);
-void tty_raw_disable(void);
-int  tty_getch_nonblock(void);
-```
-
-**Detalles:**
-- Guarda/restaura estado original del terminal (`termios`).
-- Configura **modo raw** (`cfmakeraw`) y lectura **no bloqueante** (`O_NONBLOCK`).
-- `setvbuf(stdout, NULL, _IONBF, 0)` para impresión inmediata.
-
----
-
-### 3. **Debounce**  
-**Archivos:** `include/debounce.h` + `src/debounce.c`
-
-```c
-int debounce_state(int raw, long long window_ms);
-int debounce_press(int raw, long long window_ms);
-```
+    Dia3/Simulacion_led_modular/
+    ├─ include/
+    │  ├─ gpio.h
+    │  ├─ tty.h
+    │  ├─ pins.h
+    │  ├─ debounce.h
+    │  └─ timeutil.h
+    ├─ src/
+    │  ├─ main_switch.c
+    │  ├─ main_toggle.c
+    │  ├─ gpio_sim.c
+    │  ├─ tty.c
+    │  ├─ debounce.c
+    │  └─ timeutil.c
+    ├─ makefile
+    ├─ build/           # Archivos compilados
+    └─ bin/             # Ejecutables
 
 ---
 
-### 4. **Utilidades de Tiempo**  
-**Archivos:** `include/timeutil.h` + `src/timeutil.c`
+## 📄 Descripción de Archivos
 
-```c
-long long now_ms(void);
-void sleep_ms(int ms);
-```
-
----
-
-### 5. **Definición de Pines**  
-**Archivo:** `include/pins.h`
-
-```c
-#define PIN_LED     13
-#define PIN_BUTTON  12
-#define PIN_COUNT   64
-```
+| Archivo         | Tipo   | Descripción                                  | Propósito                          |
+|-----------------|--------|----------------------------------------------|------------------------------------|
+| `gpio.h`        | Header | API pública de GPIO.                         | Abstraer el acceso a pines.        |
+| `gpio_sim.c`    | Código | Implementación simulada de GPIO en PC.       | Probar sin hardware real.          |
+| `tty.h`         | Header | API para control de terminal.                | Evitar bloqueo/eco en teclado.     |
+| `tty.c`         | Código | TTY modo raw + lectura no bloqueante.        | Lectura en tiempo real.            |
+| `pins.h`        | Header | Definición de pines lógicos.                 | Facilitar cambios de mapeo.        |
+| `debounce.h`    | Header | API de debounce.                             | Filtrar ruido mecánico.            |
+| `debounce.c`    | Código | Implementación de debounce.                  | Lógica de filtrado de señal.       |
+| `timeutil.h`    | Header | API de tiempo.                               | Medir ms y pausar ejecución.       |
+| `timeutil.c`    | Código | Implementación POSIX de tiempo.              | Precisión en milisegundos.         |
+| `main_switch.c` | App    | Modo SWITCH: LED sigue el botón.             | Debounce por nivel.                |
+| `main_toggle.c` | App    | Modo TOGGLE: LED alterna en cada pulsación.  | Debounce por flanco.               |
 
 ---
 
-## 🖥️ Programas de ejemplo
+## 🛠️ Estructuras y Tipos
 
-### `main_switch.c`
-- `'1'` → LED ON
-- `'0'` → LED OFF
-- `'q'` → salir  
-Usa **debounce por nivel**.
+### `gpio_mode_t` — Modo de pin
 
-**Parámetros:**
-```ini
-POLL_MS     = 40 ms
-DEBOUNCE_MS = 50 ms
-```
+    typedef enum {
+        GPIO_INPUT = 0,
+        GPIO_OUTPUT = 1
+    } gpio_mode_t;
 
----
+### `gpio_pull_t` — Resistencia interna
 
-### `main_toggle.c`
-- `'1'` → alterna LED ON/OFF con pulso virtual.
-- `'q'` → salir  
+    typedef enum {
+        GPIO_NOPULL = 0,
+        GPIO_PULLUP = 1,
+        GPIO_PULLDOWN = 2
+    } gpio_pull_t;
 
-**Parámetros:**
-```ini
-POLL_MS         = 5 ms
-DEBOUNCE_MS     = 50 ms
-PULSE_MARGIN_MS = 5 ms
-```
+### `gpio_slot_t` — Estructura interna (simulación)
 
----
-
-## ⚙️ Compilación y ejecución
-
-```bash
-make clean && make
-
-./bin/boton_switch
-# '1' encender LED, '0' apagar, 'q' salir
-
-./bin/boton_toggle
-# '1' alterna LED, 'q' salir
-```
-
-**Requisitos:** Linux, macOS o WSL (usa `termios` y POSIX I/O).
+    typedef struct {
+        gpio_mode_t mode;   // INPUT o OUTPUT
+        gpio_pull_t pull;   // NOPULL, PULLUP, PULLDOWN
+        int value;          // Valor si es OUTPUT
+        int input_raw;      // Valor crudo si es INPUT
+    } gpio_slot_t;
 
 ---
 
-## 💡 Decisiones de diseño
+## 📜 Funciones Principales
+
+| Función                                    | Archivo       | Descripción                                         |
+|--------------------------------------------|---------------|-----------------------------------------------------|
+| `void gpio_init(void)`                      | `gpio_sim.c`  | Inicializa todos los pines (INPUT, NOPULL, 0).      |
+| `void gpio_mode(int pin, gpio_mode_t mode)` | `gpio_sim.c`  | Configura modo del pin (INPUT/OUTPUT).              |
+| `void gpio_set_pull(int pin, gpio_pull_t)`  | `gpio_sim.c`  | Configura resistencia interna si es entrada.        |
+| `void gpio_write(int pin, int value)`       | `gpio_sim.c`  | Escribe 0/1 en un pin de salida.                    |
+| `int  gpio_read(int pin)`                   | `gpio_sim.c`  | Lee valor lógico del pin (0/1).                     |
+| `void gpio_simulate_input(int pin,int val)` | `gpio_sim.c`  | Inyecta valor crudo en un pin de entrada (sim).     |
+| `void tty_raw_enable(void)`                 | `tty.c`       | Activa modo raw + O_NONBLOCK en stdin.              |
+| `void tty_raw_disable(void)`                | `tty.c`       | Restaura configuración original del terminal.       |
+| `int  tty_getch_nonblock(void)`             | `tty.c`       | Lee tecla sin bloquear (−1 si no hay).              |
+| `int  debounce_state(int raw,long long ms)` | `debounce.c`  | Devuelve nivel estable tras ms de estabilidad.      |
+| `int  debounce_press(int raw,long long ms)` | `debounce.c`  | 1 solo en flanco 0→1 estable (una vez).             |
+| `long long now_ms(void)`                    | `timeutil.c`  | Tiempo actual en milisegundos.                      |
+| `void sleep_ms(int ms)`                     | `timeutil.c`  | Pausa ejecución en milisegundos.                    |
+
+---
+
+## 🖥️ Programas de Ejemplo
+
+### `main_switch.c` — Modo SWITCH
+
+- Teclas: `'1'` → LED ON, `'0'` → LED OFF, `'q'` → salir  
+- Usa `tty_getch_nonblock()` (teclado no bloqueante).  
+- Aplica `debounce_state()` para seguir el **nivel estable**.
+
+Parámetros:
+
+    POLL_MS     = 40 ms
+    DEBOUNCE_MS = 50 ms
+
+### `main_toggle.c` — Modo TOGGLE
+
+- Teclas: `'1'` → alterna LED ON/OFF (pulso virtual 0→1→0), `'q'` → salir  
+- Usa `tty_getch_nonblock()` y `debounce_press()` (flanco 0→1 estable).  
+
+Parámetros:
+
+    POLL_MS         = 5 ms
+    DEBOUNCE_MS     = 50 ms
+    PULSE_MARGIN_MS = 5 ms
+
+---
+
+## ⚙️ Compilación y Ejecución
+
+    make clean && make
+
+    ./bin/boton_switch
+    # '1' encender LED, '0' apagar, 'q' salir
+
+    ./bin/boton_toggle
+    # '1' alterna LED, 'q' salir
+
+**Requisitos:** Linux/macOS/WSL (usa `termios` y POSIX I/O).
+
+---
+
+## 📈 Decisiones de Diseño
+
 - API de GPIO idéntica para simulación y hardware real.
-- Determinismo en `NOPULL` (devuelve `0` en vez de valor aleatorio).
-- Uso de TTY en modo raw + lectura no bloqueante.
-- Restauración automática de la terminal con `atexit(tty_raw_disable)`.
+- Determinismo en `GPIO_NOPULL` (devuelve 0 para simplicidad).
+- Lectura no bloqueante para mantener el loop de polling activo.
+- Restauración automática de terminal con `atexit(tty_raw_disable)`.
 
 ---
 
-## 🛠️ Errores corregidos
-- `intpin_is_valid` → `int pin_is_valid`
-- Implementación faltante de `gpio_read`
-- Alias `gpio_sim_set_input` corregido
-- Sustitución de `getchar()` bloqueante por `tty_getch_nonblock()`
-- Protección `_GNU_SOURCE` para evitar redefinición
+## 🛠️ Errores Corregidos Durante el Desarrollo
+
+- `static intpin_is_valid` → `static int pin_is_valid` (typo crítico).
+- Implementación faltante de `gpio_read(int)` (enlace fallaba).
+- Desfase `gpio_sim_set_input` ↔ `gpio_simulate_input` (alias y unificación).
+- Reemplazo de `getchar()` bloqueante por `tty_getch_nonblock()`.
+- Protección de `_GNU_SOURCE` en `tty.c` para evitar redefinición.
 
 ---
 
-## 🔄 Portar a hardware real
-1. Crear `gpio_hw.c` con mismas firmas que `gpio.h`.
-2. Implementar acceso a registros reales del MCU.
-3. Ajustar `pins.h` a pines reales.
-4. Eliminar `gpio_simulate_input`.
-5. Compilar con toolchain del MCU.
+## 🔄 Portar a Hardware Real
+
+1. Crear `src/gpio_hw.c` con las **mismas firmas** de `include/gpio.h`.
+2. Implementar acceso a registros del MCU (modo, pull, ODR/IDR).
+3. Ajustar `include/pins.h` a pines físicos reales.
+4. Eliminar `gpio_simulate_input` (no aplica en HW).
+5. Compilar con el toolchain del MCU (ej. `arm-none-eabi-gcc`) y su HAL/SDK.
 
 ---
 
-## 🧪 Pruebas recomendadas
-- Cambiar `GPIO_PULLUP / GPIO_PULLDOWN` y observar.
-- Variar `DEBOUNCE_MS` y `POLL_MS` para medir tolerancia.
-- Probar pulsos cortos en `toggle` y ver si pasan el debounce.
+## 📄 Licencia
 
----
-
-## 📝 Troubleshooting
-- **No responde teclas:** verifica `tty_getch_nonblock` y `tty_raw_enable`.
-- **LED no cambia:** revisa `pull` y valores simulados.
-- **Errores linker:** confirmar coincidencia de firmas con `gpio.h` y recompilar.
-
----
-
-## 🚀 Roadmap
-- Simulación de ruido en pines sin pull.
-- Soporte de interrupciones simuladas.
-- Port multiplataforma (WinAPI).
-- Dashboard visual para LED/botón.
+Código educativo para prácticas de **GPIO**, **debounce** y **I/O no bloqueante**.  
+Libre uso y modificación para fines de aprendizaje.
